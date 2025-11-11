@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cal's Quest Log</title>
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+        
+        // Storage polyfill for GitHub Pages
+        if (!window.storage) {
+            window.storage = {
+                async get(key) {
+                    const value = localStorage.getItem(key);
+                    return value ? { key, value, shared: false } : null;
+                },
+                async set(key, value) {
+                    localStorage.setItem(key, value);
+                    return { key, value, shared: false };
+                },
+                async delete(key) {
+                    localStorage.removeItem(key);
+                    return { key, deleted: true, shared: false };
+                },
+                async list(prefix) {
+                    const keys = Object.keys(localStorage).filter(k => 
+                        !prefix || k.startsWith(prefix)
+                    );
+                    return { keys, prefix, shared: false };
+                }
+            };
+        }
+
+        function QuestLog() {
+            const [bounties, setBounties] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [newBounty, setNewBounty] = useState({
+                item: '',
+                location: '',
+                holder: '',
+                order: ''
+            });
+            const [showForm, setShowForm] = useState(false);
+
+            useEffect(() => {
+                loadBounties();
+            }, []);
+
+            const loadBounties = async () => {
+                try {
+                    const result = await window.storage.get('dnd-bounties');
+                    if (result && result.value) {
+                        setBounties(JSON.parse(result.value));
+                    } else {
+                        // No data exists, load initial bounties
+                        console.log('Loading initial bounties from CSV');
+                        const initialBounties = [
+                            { item: "Emberglass Shard", location: "The Furnace Hollows, The Patchwork City", holder: "Skittergloom the Pest", order: 1 },
+                            { item: "The Ledger of Forgotten Debts", location: "Interdimensional Bank, The Patchwork City", holder: "Inkfang, Debt Collector", order: 2 },
+                            { item: "A Knight In Need", location: "The Terror of Minidia's Lair", holder: "Saunsum the Mighty", order: 3 },
+                            { item: "Embued Memory Stone", location: "Rustveil Carnival", holder: "Shifty O' Grindle", order: 4 },
+                            { item: "Amulet of the Windway", location: "The Grove of Serenity", holder: "The Council of Five", order: 5 },
+                            { item: "Stabilized Shard of Continuity Crystal", location: "The Temple of Tomorrow", holder: "High Seneschal Prayk, Warden of Akthentrex", order: 6 },
+                            { item: "The Wailing Serpent's Venom", location: "The Lamenting Abyss", holder: "The Wailing Serpent", order: 7 },
+                            { item: "The Sword of Apotheo", location: "The Labyrinth of Thilsavrass", holder: "Thilsavrass, Multiplanar Deity of Mazes, Traps, Lost Items", order: 8 },
+                            { item: "A Ripe Pear From The Last Remaining Tree Of The Singing Orchard", location: "Central Plains of the Honeyed Expanse", holder: "Three-Headed Hare of the Elder-Warren", order: 9 },
+                            { item: "The Heart of Exarch 001", location: "The Volkan Wastes", holder: "Exarch 001", order: 10 }
+                        ];
+                        setBounties(initialBounties);
+                        try {
+                            await window.storage.set('dnd-bounties', JSON.stringify(initialBounties));
+                        } catch (saveError) {
+                            console.error('Failed to save initial bounties:', saveError);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error loading bounties:', error);
+                    setBounties([]);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const saveBounties = async (updatedBounties) => {
+                try {
+                    await window.storage.set('dnd-bounties', JSON.stringify(updatedBounties));
+                    setBounties(updatedBounties);
+                } catch (error) {
+                    console.error('Failed to save bounties:', error);
+                    alert('ERROR: Failed to save bounties to database');
+                }
+            };
+
+            const addBounty = async () => {
+                if (!newBounty.item || !newBounty.location || !newBounty.holder) {
+                    alert('ERROR: All fields except Priority # are required');
+                    return;
+                }
+                const nextOrder = bounties.length > 0 ? Math.max(...bounties.map(b => b.order)) + 1 : 1;
+                const bounty = {
+                    ...newBounty,
+                    order: parseInt(newBounty.order) || nextOrder
+                };
+                await saveBounties([...bounties, bounty]);
+                setNewBounty({ item: '', location: '', holder: '', order: '' });
+                setShowForm(false);
+            };
+
+            const deleteBounty = async (order) => {
+                const updated = bounties.filter(b => b.order !== order);
+                await saveBounties(updated);
+            };
+
+            const sortedBounties = [...bounties].sort((a, b) => a.order - b.order);
+
+            if (loading) {
+                return (
+                    <div className="min-h-screen bg-black text-green-400 font-mono p-4 flex items-center justify-center">
+                        <div className="text-xl">LOADING DATABASE...</div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen bg-black text-green-400 font-mono p-4">
+                    <div className="max-w-6xl mx-auto">
+                        <div className="border-4 border-green-400 p-4 mb-4 bg-green-950 bg-opacity-20">
+                            <div className="text-center mb-2">
+                                <div className="text-3xl font-bold mb-1">╔═══════════════════════════════════╗</div>
+                                <div className="text-4xl font-bold tracking-wider">CAL'S QUEST LOG</div>
+                                <div className="text-3xl font-bold mt-1">╚═══════════════════════════════════╝</div>
+                            </div>
+                            <div className="text-center text-sm mt-2">
+                                <div>▓▓▓ CALIBAN VOSS - PERSONAL FILES ▓▓▓</div>
+                                <div className="mt-1">Status: SHARED | Tasks Logged: {bounties.length}</div>
+                            </div>
+                        </div>
+
+                        <div className="mb-4 flex justify-end">
+                            <button
+                                onClick={() => setShowForm(!showForm)}
+                                className="border-2 border-green-400 px-4 py-2 hover:bg-green-400 hover:text-black transition-colors flex items-center gap-2"
+                            >
+                                <span className="text-xl">+</span>
+                                {showForm ? 'CANCEL' : 'ADD QUEST'}
+                            </button>
+                        </div>
+
+                        {showForm && (
+                            <div className="border-2 border-green-400 p-4 mb-4 bg-green-950 bg-opacity-10">
+                                <div className="text-xl mb-3">► NEW QUEST ENTRY</div>
+                                <div className="space-y-3">
+                                    <div>
+                                        <label className="block mb-1">ITEM/OBJECTIVE:</label>
+                                        <input
+                                            type="text"
+                                            value={newBounty.item}
+                                            onChange={(e) => setNewBounty({...newBounty, item: e.target.value})}
+                                            className="w-full bg-black border-2 border-green-400 p-2 text-green-400 focus:outline-none focus:bg-green-950 focus:bg-opacity-20"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block mb-1">LOCATION:</label>
+                                        <input
+                                            type="text"
+                                            value={newBounty.location}
+                                            onChange={(e) => setNewBounty({...newBounty, location: e.target.value})}
+                                            className="w-full bg-black border-2 border-green-400 p-2 text-green-400 focus:outline-none focus:bg-green-950 focus:bg-opacity-20"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block mb-1">IN POSSESSION OF:</label>
+                                        <input
+                                            type="text"
+                                            value={newBounty.holder}
+                                            onChange={(e) => setNewBounty({...newBounty, holder: e.target.value})}
+                                            className="w-full bg-black border-2 border-green-400 p-2 text-green-400 focus:outline-none focus:bg-green-950 focus:bg-opacity-20"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block mb-1">PRIORITY # (optional):</label>
+                                        <input
+                                            type="number"
+                                            value={newBounty.order}
+                                            onChange={(e) => setNewBounty({...newBounty, order: e.target.value})}
+                                            className="w-full bg-black border-2 border-green-400 p-2 text-green-400 focus:outline-none focus:bg-green-950 focus:bg-opacity-20"
+                                            placeholder="Auto-assigned if left blank"
+                                        />
+                                    </div>
+                                    <button
+                                        onClick={addBounty}
+                                        className="w-full border-2 border-green-400 px-4 py-2 hover:bg-green-400 hover:text-black transition-colors"
+                                    >
+                                        ► LOG QUEST
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="border-2 border-green-400 p-4 bg-green-950 bg-opacity-10">
+                            <div className="text-xl mb-4 flex items-center gap-2">
+                                <span>📦</span>
+                                THINGS I NEED YOU TO FIND
+                            </div>
+                            
+                            {bounties.length === 0 ? (
+                                <div className="text-center py-8 text-green-600">
+                                    NO QUESTS LOGGED YET
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {sortedBounties.map((bounty) => (
+                                        <div key={bounty.order} className="border border-green-400 p-3 hover:bg-green-950 hover:bg-opacity-30 transition-colors">
+                                            <div className="flex justify-between items-start mb-2">
+                                                <div className="text-lg font-bold">
+                                                    #{String(bounty.order).padStart(3, '0')} - {bounty.item}
+                                                </div>
+                                                <button
+                                                    onClick={() => deleteBounty(bounty.order)}
+                                                    className="border border-green-400 p-1 hover:bg-red-900 hover:border-red-400 hover:text-red-400 transition-colors"
+                                                    title="Delete quest"
+                                                >
+                                                    🗑️
+                                                </button>
+                                            </div>
+                                            <div className="text-sm space-y-1 ml-4">
+                                                <div>► LOCATION: {bounty.location}</div>
+                                                <div>► IN POSSESSION OF: {bounty.holder}</div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="mt-4 text-center text-xs text-green-600">
+                            <div>═══════════════════════════════════</div>
+                            <div className="mt-2">CALIBAN VOSS PERSONAL SYSTEM © 1997</div>
+                            <div>Don't screw this up. - Cal</div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<QuestLog />);
+    </script>
+</body>
+</html>
