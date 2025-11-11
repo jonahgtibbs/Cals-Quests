@@ -140,13 +140,14 @@
                     <div className="max-w-6xl mx-auto">
                         <div className="border-4 border-green-400 p-4 mb-4 bg-green-950 bg-opacity-20">
                             <div className="text-center mb-2">
-                                <div className="text-3xl font-bold mb-1">╔═══════════════════════════════════╗</div>
-                                <div className="text-4xl font-bold tracking-wider">CAL'S QUEST LOG</div>
-                                <div className="text-3xl font-bold mt-1">╚═══════════════════════════════════╝</div>
+                                <div className="text-xl sm:text-3xl font-bold mb-1 hidden sm:block">╔═══════════════════════════════════╗</div>
+                                <div className="text-2xl sm:text-4xl font-bold tracking-wider">CAL'S QUEST LOG</div>
+                                <div className="text-xl sm:text-3xl font-bold mt-1 hidden sm:block">╚═══════════════════════════════════╝</div>
                             </div>
-                            <div className="text-center text-sm mt-2">
-                                <div>▓▓▓ CALIBAN VOSS - PERSONAL FILES ▓▓▓</div>
-                                <div className="mt-1">Status: SHARED | Tasks Logged: {bounties.length}</div>
+                            <div className="text-center text-xs sm:text-sm mt-2">
+                                <div className="hidden sm:block">▓▓▓ CALIBAN VOSS - PERSONAL FILES ▓▓▓</div>
+                                <div className="sm:hidden">CALIBAN VOSS</div>
+                                <div className="mt-1">Status: SHARED | Tasks: {bounties.length}</div>
                             </div>
                         </div>
 
@@ -213,7 +214,7 @@
 
                         <div className="border-2 border-green-400 p-4 bg-green-950 bg-opacity-10">
                             <div className="text-xl mb-4 flex items-center gap-2">
-                                THINGS I NEED YOU TO FIND/DO
+                                THINGS TO FIND/DO
                             </div>
                             
                             {bounties.length === 0 ? (
